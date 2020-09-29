@@ -7,16 +7,13 @@ var link = "https://www.hltv.org/matches/2316478/sk-vs-virtuspro-epicenter-2017"
 var path = link.split('/');
 var matchId = path[4];
 var i=0;
-var tempo = 1000;
+var time = 1000;
 var cron;
 var ss = 0;
-var partidaEncontrada = false;
-var playerEncontrado = false;
+var isMatchFound = false;
+var isPlayerFound = false;
 
 const venom = require('venom-bot');
-
-
-
 
 venom.create().then((client) => start(client));
 
@@ -43,19 +40,19 @@ function start(client) {
             }
             else if(ss == 0){
                 startCountdown();
-                procurarPlayer();
+                searchPlayer();
             }
         }
 
-        async function procurarPlayer(){
+        async function searchPlayer(){
             await HLTV.getPlayerByName({name: playerName}).then((res) =>{
 
                 if(!res){
-                    playerEncontrado = false;
+                    isPlayerFound = false;
                     client.sendText(message.from,"O jogador *" + playerName+ "* não foi encontrado");
                 }
                 else{
-                    playerEncontrado = true;
+                    isPlayerFound = true;
                     
                     client.sendText(message.from,"Player: " + res.name + " \n\nIdade:"+ res.age +"\nRating: " + res.statistics.rating + "\nKills por round: "+ res.statistics.killsPerRound +"\nMapas jogados: "+ res.statistics.mapsPlayed +"\nHeadshots:"+ res.statistics.headshots+"\nMortes por round: " +res.statistics.deathsPerRound+"\nRounds contribuídos: " +res.statistics.roundsContributed + "\n\n*REDES SOCIAIS*\n\nTwitter: "+res.twitter+"\nTwitch: "+ res.twitch + "\nFacebook: " + res.facebook);
                 }
@@ -72,10 +69,10 @@ function start(client) {
             }
             else if(ss == 0){
                 startCountdown();
-                ProcurarPartida();
+                searchMatch();
             }
             
-            async function ProcurarPartida(){
+            async function searchMatch(){
                 await HLTV.getMatches().then((res) =>{
                     for(i=0;i<101;i++){
 
@@ -85,19 +82,19 @@ function start(client) {
 
                         else if(res[i].team1.name.toLowerCase() == TeamName){
                             matchId = res[i].id;
-                            partidaEncontrada = true;
-                            PegarPartida();
+                            isMatchFound = true;
+                            getMatch();
                             i = 101;
                         }
                         else if(res[i].team2.name.toLowerCase() == TeamName){
                             matchId = res[i].id;
-                            partidaEncontrada = true
-                            PegarPartida();
+                            isMatchFound = true
+                            getMatch();
                             i = 101;
                         }
                         else if(i==100){
                             client.sendText(message.from,"Não foi encontrada nenhuma partida para esse time");
-                            partidaEncontrada = false;
+                            isMatchFound = false;
                         }
                     }
                     
@@ -113,10 +110,10 @@ function start(client) {
             }
             else if(ss == 0){
                 startCountdown();
-                ProcurarPartidaVetos();
+                searchMatchVetos();
             }
 
-            async function ProcurarPartidaVetos(){
+            async function searchMatchVetos(){
                 await HLTV.getMatches().then((res) =>{
                     for(i=0;i<101;i++){
 
@@ -126,19 +123,19 @@ function start(client) {
 
                         else if(res[i].team1.name.toLowerCase() == TeamName){
                             matchId = res[i].id;
-                            partidaEncontrada = true;
-                            mostrarVetos();
+                            isMatchFound = true;
+                            showVetos();
                             i = 101;
                         }
                         else if(res[i].team2.name.toLowerCase() == TeamName){
                             matchId = res[i].id;
-                            partidaEncontrada = true
-                            mostrarVetos();
+                            isMatchFound = true
+                            showVetos();
                             i = 101;
                         }
                         else if(i==99){
                             client.message(message.from,"Não foi encontrada nenhuma partida para esse time");
-                            partidaEncontrada = false;
+                            isMatchFound = false;
                         }
                     }
                     
@@ -147,7 +144,7 @@ function start(client) {
             
         }
 
-        async function PegarPartida(){
+        async function getMatch(){
             await HLTV.getMatch({id:matchId}).then((res)=>{
 
                 var PrimeiroMapa = res.maps[0].name;
@@ -220,8 +217,8 @@ function start(client) {
                         
                 }
                 else if(res.live = true){
-                    PartidaLive();
-                    async function PartidaLive(){
+                    liveMatch();
+                    async function liveMatch(){
                         await HLTV.connectToScorebot({id: matchId, onScoreboardUpdate: (data, done) => {
                             // if you call done() the socket connection will close.
                         }, onConnect: (data, done) => {
@@ -247,7 +244,7 @@ function start(client) {
         }
 
 
-        async function mostrarVetos(){
+        async function showVetos(){
             await HLTV.getMatch({id:matchId}).then((res)=>{
         
                 if(res.format.trim().toLowerCase() === "best of 5"){
@@ -264,7 +261,7 @@ function start(client) {
         }
     });
     function startCountdown(){
-        cron = setInterval(() => { timer(); },tempo);
+        cron = setInterval(() => { timer(); }, time);
     }
 
     function timer(){
